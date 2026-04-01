@@ -14,9 +14,9 @@ app = Flask(__name__)
 CORS(app)
 
 # ───────────── CONFIG ─────────────
-SENDER_EMAIL   = "shubhamwork7007@gmail.com"
-SENDER_PASSWORD = "jcbprnixwmkxguko"
-ADMIN_EMAIL    = "itsmeanshu248@gmail.com"
+SENDER_EMAIL   = "----------"
+SENDER_PASSWORD = "shsknssnkns"
+ADMIN_EMAIL    = "-------------"
 
 # ───────────── DATA ─────────────
 medicine_names = [

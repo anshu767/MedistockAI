@@ -10,7 +10,6 @@ import warnings
 warnings.filterwarnings("ignore")
  
 
-# ── SEASON LOGIC ──────────────────────────────────────
 def get_season(month):
     if month in [3, 4, 5, 6]:
         return "summer"
@@ -20,7 +19,6 @@ def get_season(month):
         return "winter"
  
  
-# ── SEASONAL FACTORS ──────────────────────────────────
 SEASONAL_BOOST = {
     "summer":  ["ORS", "Cetirizine", "Paracetamol", "Dolo 650"],
     "monsoon": ["Amoxicillin", "Ciprofloxacin", "Azithromycin", "ORS", "Metformin"],
@@ -34,7 +32,6 @@ SEASONAL_FACTORS = {
 }
  
  
-# ── FEATURE ENGINEERING ──────────────────────────────
 def build_features(df):
     """
     Adds extra features to improve model accuracy:
@@ -45,26 +42,25 @@ def build_features(df):
     """
     df = df.copy().sort_values("date")
  
-    # Cyclical month encoding (Jan & Dec are close, not far apart)
     df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
     df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
  
-    # Season as number
+    
     season_map = {"summer": 0, "monsoon": 1, "winter": 2}
     df["season_enc"] = df["season"].map(season_map)
  
-    # Lag features (previous months' sales)
+  
     df["lag_1"] = df["quantity"].shift(1)
     df["lag_2"] = df["quantity"].shift(2)
  
-    # 3-month rolling average
+  
     df["rolling_3"] = df["quantity"].rolling(window=3, min_periods=1).mean().shift(1)
  
     df = df.dropna()
     return df
  
  
-# ── BEST MODEL SELECTOR ──────────────────────────────
+
 def select_best_model(X, y):
     """
     Tries 4 models and picks the one with best cross-val MAE.
@@ -104,17 +100,15 @@ def select_best_model(X, y):
     best_model.fit(X, y)
     return best_model, best_name, round(best_score, 2)
  
- 
-# ── MAIN PREDICTION FUNCTION ─────────────────────────
 def train_and_predict():
-    # ── Load Data ──
+   
     try:
         df = pd.read_csv("data/drug_sales.csv")
     except FileNotFoundError:
         print("❌ data/drug_sales.csv not found!")
         return {}
  
-    # ── Validate Columns ──
+    
     required = {"date", "drug", "quantity"}
     if not required.issubset(df.columns):
         print(f"❌ CSV must have columns: {required}")
@@ -134,7 +128,7 @@ def train_and_predict():
     for drug in df["drug"].unique():
         drug_df = df[df["drug"] == drug].copy()
  
-        # ── Not enough data → use mean ──
+        
         if len(drug_df) < 2:
             predictions[drug] = {
                 "predicted_demand": int(drug_df["quantity"].mean()),
@@ -146,12 +140,11 @@ def train_and_predict():
             }
             continue
  
-        # ── Feature Engineering ──
+       
         featured = build_features(drug_df)
  
         available_features = [f for f in FEATURE_COLS if f in featured.columns]
  
-        # ── Train / Predict ──
         if len(featured) >= 2 and available_features:
             X = featured[available_features]
             y = featured["quantity"]
@@ -179,7 +172,7 @@ def train_and_predict():
             r2  = round(r2_score(y, y_pred), 3) if len(y) > 1 else None
  
         else:
-            # Simple linear regression fallback
+           
             X_simple = drug_df[["month"]]
             y_simple  = drug_df["quantity"]
             model = LinearRegression().fit(X_simple, y_simple)
@@ -188,7 +181,7 @@ def train_and_predict():
             mae = None
             r2  = None
  
-        # ── Seasonal Boost ──
+       
         seasonal_boost  = drug in SEASONAL_BOOST.get(current_season, [])
         seasonal_factor = SEASONAL_FACTORS[current_season] if seasonal_boost else 1.0
  
@@ -207,7 +200,6 @@ def train_and_predict():
     return predictions
  
  
-# ── FLASK ROUTE HELPER ────────────────────────────────
 def get_predictions_for_api(inventory):
     """
     Call this from your Flask /ml-predict route.
@@ -216,7 +208,7 @@ def get_predictions_for_api(inventory):
     """
     ml_preds = train_and_predict()
  
-    # Group current stock by drug name
+
     stock_map = {}
     for item in inventory:
         name = item["name"]
@@ -246,7 +238,7 @@ def get_predictions_for_api(inventory):
     return sorted(results, key=lambda x: x["suggest_reorder"], reverse=True)
  
  
-# ── TEST RUN ──────────────────────────────────────────
+
 if __name__ == "__main__":
     preds = train_and_predict()
     print(f"\n{'Drug':<20} {'Predicted':>10} {'Model':<22} {'MAE':>6} {'R2':>6} {'Boost'}")

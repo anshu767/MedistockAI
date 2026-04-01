@@ -140,7 +140,13 @@ export default function UserManagement() {
                   <td style={{fontSize:12,color:"var(--muted)"}}>
                     {u.role==="admin"?"Full Access":u.role==="manager"?"View + Reorder":"View + Dispense"}
                   </td>
-                  <td style={{fontSize:12,color:"var(--muted)"}}>{u.createdAt?.slice(0,10)||"—"}</td>
+                  <td style={{fontSize:12,color:"var(--muted)"}}>
+                    {
+                      u.createdAt
+                        ? new Date(u.createdAt.seconds * 1000).toLocaleDateString()
+                        : "—"
+                    }
+                    </td>
                   <td>
                     {u.role!=="admin" && u.uid !== user?.uid && (
                       <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(u.uid,u.name)}>🗑 Remove</button>
